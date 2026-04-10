@@ -62,7 +62,7 @@ class EnvBuilder:
         self.upgrade_deps = upgrade_deps
         self.scm_ignore_files = frozenset(map(str.lower, scm_ignore_files))
 
-    def create(self, env_dir, *, project_root=None):
+    def create(self, env_dir=DEFAULT_NAME, *, project_root=None):
         """
         Create a virtual environment in a directory.
 
