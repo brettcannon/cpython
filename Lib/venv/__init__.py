@@ -14,6 +14,7 @@ import types
 import shlex
 
 
+DEFAULT_NAME = '.venv'
 CORE_VENV_DEPS = ('pip',)
 logger = logging.getLogger(__name__)
 
@@ -61,11 +62,17 @@ class EnvBuilder:
         self.upgrade_deps = upgrade_deps
         self.scm_ignore_files = frozenset(map(str.lower, scm_ignore_files))
 
-    def create(self, env_dir):
+    def create(self, env_dir, *, project_root=None):
         """
         Create a virtual environment in a directory.
 
+        Optionally, write a ``.venv`` file at *project_root* if necessary
+        (i.e. *env_dir* is not already being placed in ``DEFAULT_NAME`` or
+        the parent directory of *end_dir* is different from *project_root*).
+
         :param env_dir: The target directory to create an environment in.
+        :param project_root: The root of the project where a ``.venv`` file
+                             will be created if necessary.
 
         """
         env_dir = os.path.abspath(env_dir)
@@ -90,6 +97,7 @@ class EnvBuilder:
             self.create_configuration(context)
         if self.upgrade_deps:
             self.upgrade_dependencies(context)
+        # XXX create_redirect_file(env_dir, project_root)
 
     def clear_directory(self, path):
         for fn in os.listdir(path):
@@ -213,6 +221,16 @@ class EnvBuilder:
                                context.env_exe, real_env_exe)
                 context.env_exec_cmd = real_env_exe
         return context
+
+    def create_redirect_file(self, venv_dir, project_root):
+        """
+        Create a ``.venv`` file at *project_root* that points to *venv_dir*.
+
+        :param venv_dir: The directory of the virtual environment.
+        :param project_root: The root of the project where the ``.venv`` file
+                             will be created.
+        """
+        # XXX
 
     def create_configuration(self, context):
         """
@@ -606,6 +624,20 @@ def create(env_dir, system_site_packages=False, clear=False,
     builder.create(env_dir)
 
 
+def executable(dir, *, traverse=False):
+    """
+    Find the Python executable in a virtual environment located in *dir* at ``DEFAULT_NAME``.
+
+    If *traverse* is True, also look in parent directories of *dir* for a
+    virtual environment.
+
+    :param dir: The directory (to start) to look for a virtual environment in
+                ``DEFAULT_NAME``.
+    :param traverse: Flag to control whether to traverse through parent
+                     directories as part of the search.
+    """
+    # XXX
+
 def main(args=None):
     import argparse
 
@@ -621,7 +653,10 @@ def main(args=None):
                                      color=True,
                                      )
     parser.add_argument('dirs', metavar='ENV_DIR', nargs='+',
-                        help='A directory to create the environment in.')
+                        default=[DEFAULT_NAME],
+                        help='A directory to create the environment in '
+                             f'(default is {DEFAULT_NAME!r}).')
+    # XXX project-root
     parser.add_argument('--system-site-packages', default=False,
                         action='store_true', dest='system_site',
                         help='Give the virtual environment access to the '

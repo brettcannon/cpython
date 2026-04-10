@@ -1,6 +1,12 @@
 :mod:`!venv` --- Creation of virtual environments
 =================================================
 
+# XXX DEFAULT_NAME
+# XXX create_redirect_file
+# XXX create
+# XXX executable
+# XXX --project-root
+
 .. module:: venv
    :synopsis: Creation of virtual environments.
 
