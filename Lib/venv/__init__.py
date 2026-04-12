@@ -692,7 +692,8 @@ def main(args=None):
                         help='A directory to create the environment in '
                              f'(default is {DEFAULT_NAME!r}).')
     parser.add_argument("--project-root", dest="project_root", default=None,
-                        help="The root of the project")
+                        help="The root of the project; used for creating a "
+                             f"redirect file at {DEFAULT_NAME!r}, if necessary.")
     parser.add_argument('--system-site-packages', default=False,
                         action='store_true', dest='system_site',
                         help='Give the virtual environment access to the '
