@@ -133,22 +133,6 @@ class BasicTest(BaseTest):
         self.run_with_capture(venv.create, FakePath(self.env_dir))
         self._check_output_of_default_create()
 
-    def test_create_no_specified_path(self):
-        env_location = os.path.join(self.env_dir, venv.DEFAULT_NAME)
-
-        callables = [venv.create, venv.EnvBuilder().create]
-        for create in callables:
-            rmtree(self.env_dir)
-            os.mkdir(self.env_dir)
-            with self.subTest(create=create):
-                assert not os.path.exists(env_location)
-
-                with contextlib.chdir(self.env_dir):
-                    self.run_with_capture(venv.create)
-
-                assert os.path.exists(env_location)
-
-
     def _check_output_of_default_create(self):
         self.isdir(self.bindir)
         self.isdir(self.include)
@@ -917,6 +901,23 @@ class BasicTest(BaseTest):
         except subprocess.CalledProcessError:
             self.fail("venvwlauncher.exe did not run %s" % exename)
 
+    def test_create_no_specified_path(self):
+        env_location = os.path.join(self.env_dir, venv.DEFAULT_NAME)
+
+        callables = [venv.create, venv.EnvBuilder().create]
+        for create in callables:
+            rmtree(self.env_dir)
+            os.mkdir(self.env_dir)
+            with self.subTest(create=create):
+                assert not os.path.exists(env_location)
+
+                with contextlib.chdir(self.env_dir):
+                    self.run_with_capture(venv.create)
+
+                assert os.path.exists(env_location)
+
+    # XXX test DEFAULT_NAME for CLI
+
 
 @requireVenvCreate
 class EnsurePipTest(BaseTest):
@@ -1072,6 +1073,13 @@ class EnsurePipTest(BaseTest):
     def test_with_pip(self):
         self.do_test_with_pip(False)
         self.do_test_with_pip(True)
+
+
+class RedirectFileTest(unittest.TestCase):
+    pass
+    # XXX create_redirect_file
+    # XXX project_root arg; func and meth
+    # XXX --project-root option
 
 
 if __name__ == "__main__":
