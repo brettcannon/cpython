@@ -133,6 +133,22 @@ class BasicTest(BaseTest):
         self.run_with_capture(venv.create, FakePath(self.env_dir))
         self._check_output_of_default_create()
 
+    def test_create_no_specified_path(self):
+        env_location = os.path.join(self.env_dir, venv.DEFAULT_NAME)
+
+        callables = [venv.create, venv.EnvBuilder().create]
+        for create in callables:
+            rmtree(self.env_dir)
+            os.mkdir(self.env_dir)
+            with self.subTest(create=create):
+                assert not os.path.exists(env_location)
+
+                with contextlib.chdir(self.env_dir):
+                    self.run_with_capture(venv.create)
+
+                assert os.path.exists(env_location)
+
+
     def _check_output_of_default_create(self):
         self.isdir(self.bindir)
         self.isdir(self.include)
