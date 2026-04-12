@@ -6,6 +6,7 @@ Licensed to the PSF under a contributor agreement.
 """
 import logging
 import os
+import pathlib
 import shutil
 import subprocess
 import sys
@@ -15,6 +16,7 @@ import shlex
 
 
 DEFAULT_NAME = '.venv'
+_CFG_FILE_NAME = 'pyvenv.cfg'
 CORE_VENV_DEPS = ('pip',)
 logger = logging.getLogger(__name__)
 
@@ -97,7 +99,12 @@ class EnvBuilder:
             self.create_configuration(context)
         if self.upgrade_deps:
             self.upgrade_dependencies(context)
-        # XXX create_redirect_file(env_dir, project_root)
+        if project_root is not None:
+            env_path = pathlib.Path(env_dir)
+            project_path = pathlib.Path(project_root)
+            if (env_path.name != DEFAULT_NAME
+                    or env_path.parent != project_path):
+                self.create_redirect_file(env_path, project_path)
 
     def clear_directory(self, path):
         for fn in os.listdir(path):
@@ -222,15 +229,17 @@ class EnvBuilder:
                 context.env_exec_cmd = real_env_exe
         return context
 
-    def create_redirect_file(self, venv_dir, project_root):
+    def create_redirect_file(self, env_dir, project_root):
         """
         Create a ``.venv`` file at *project_root* that points to *venv_dir*.
 
-        :param venv_dir: The directory of the virtual environment.
+        :param env_dir: The directory of the virtual environment.
         :param project_root: The root of the project where the ``.venv`` file
                              will be created.
         """
-        # XXX
+        redirect_file_path = os.path.join(project_root, DEFAULT_NAME)
+        with open(redirect_file_path, 'w', encoding='utf-8') as f:
+            f.write(os.fsdecode(env_dir))
 
     def create_configuration(self, context):
         """
@@ -241,7 +250,7 @@ class EnvBuilder:
         :param context: The information for the environment creation request
                         being processed.
         """
-        context.cfg_path = path = os.path.join(context.env_dir, 'pyvenv.cfg')
+        context.cfg_path = path = os.path.join(context.env_dir, _CFG_FILE_NAME)
         with open(path, 'w', encoding='utf-8') as f:
             f.write('home = %s\n' % context.python_dir)
             if self.system_site_packages:
@@ -636,7 +645,33 @@ def executable(dir, *, traverse=False):
     :param traverse: Flag to control whether to traverse through parent
                      directories as part of the search.
     """
-    # XXX
+    location = pathlib.Path(dir)
+    if not (venv_path := location / DEFAULT_NAME).exists():
+        if traverse and location.parent != location:
+            return executable(location.parent, traverse=True)
+        else:
+            msg = f"No virtual environment found at {DEFAULT_NAME!r} in {dir!r}"
+            if traverse:
+                msg += " or any parent directories"
+            raise FileNotFoundError(msg)
+    else:
+        if venv_path.is_file():
+            # Get the redirected location of the virtual environment.
+            with open(venv_path, 'r', encoding='utf-8') as f:
+                venv_dir = f.read().removesuffix('\n').removesuffix('\r')
+                venv_path = pathlib.Path(venv_dir)
+
+        # Check that this is an actual virtual environment.
+        if not (cfg_path := venv_path / _CFG_FILE_NAME).is_file():
+            raise FileNotFoundError(f"{_CFG_FILE_NAME!r} not found in {venv_path!r}")
+
+        potential_paths = [venv_path / 'bin' / 'python',
+                            venv_path / 'Scripts' / 'python.exe']
+        for exe_path in potential_paths:
+            if exe_path.is_file():
+                return exe_path
+        else:
+            raise FileNotFoundError(f"No 'python' executable found in {venv_path!r}")
 
 def main(args=None):
     import argparse
@@ -656,7 +691,8 @@ def main(args=None):
                         default=[DEFAULT_NAME],
                         help='A directory to create the environment in '
                              f'(default is {DEFAULT_NAME!r}).')
-    # XXX project-root
+    parser.add_argument("--project-root", dest="project_root", default=None,
+                        help="The root of the project")
     parser.add_argument('--system-site-packages', default=False,
                         action='store_true', dest='system_site',
                         help='Give the virtual environment access to the '
@@ -715,7 +751,7 @@ def main(args=None):
                          upgrade_deps=options.upgrade_deps,
                          scm_ignore_files=options.scm_ignore_files)
     for d in options.dirs:
-        builder.create(d)
+        builder.create(d, project_root=options.project_root)
 
 
 if __name__ == '__main__':
