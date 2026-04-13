@@ -752,6 +752,9 @@ def main(args=None):
     options = parser.parse_args(args)
     if options.upgrade and options.clear:
         raise ValueError('you cannot supply --upgrade and --clear together.')
+    elif len(options.dirs) > 1 and options.project_root is not None:
+        raise ValueError('you cannot specify --project-root with multiple '
+                         'environtment directories.')
     builder = EnvBuilder(system_site_packages=options.system_site,
                          clear=options.clear,
                          symlinks=options.symlinks,
