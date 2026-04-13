@@ -904,7 +904,7 @@ class BasicTest(BaseTest):
     def test_create_no_specified_path(self):
         env_location = os.path.join(self.env_dir, venv.DEFAULT_NAME)
 
-        callables = [venv.create, venv.EnvBuilder().create]
+        callables = [venv.create, venv.EnvBuilder().create, venv.main]
         for create in callables:
             rmtree(self.env_dir)
             os.mkdir(self.env_dir)
@@ -915,9 +915,6 @@ class BasicTest(BaseTest):
                     self.run_with_capture(venv.create)
 
                 assert os.path.exists(env_location)
-
-    # XXX test DEFAULT_NAME for CLI
-
 
 @requireVenvCreate
 class EnsurePipTest(BaseTest):
