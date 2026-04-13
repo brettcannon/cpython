@@ -104,7 +104,7 @@ class EnvBuilder:
             project_path = pathlib.Path(project_root)
             if (env_path.name != DEFAULT_NAME
                     or env_path.parent != project_path):
-                self.create_redirect_file(env_path, project_path)
+                self.write_redirect_file(project_path, env_path)
 
     def clear_directory(self, path):
         for fn in os.listdir(path):
@@ -229,17 +229,15 @@ class EnvBuilder:
                 context.env_exec_cmd = real_env_exe
         return context
 
-    def create_redirect_file(self, env_dir, project_root):
+    def write_redirect_file(self, project_root, env_dir):
         """
         Create a ``.venv`` file at *project_root* that points to *venv_dir*.
 
-        :param env_dir: The directory of the virtual environment.
         :param project_root: The root of the project where the ``.venv`` file
                              will be created.
+        :param env_dir: The directory of the virtual environment.
         """
-        redirect_file_path = os.path.join(project_root, DEFAULT_NAME)
-        with open(redirect_file_path, 'w', encoding='utf-8') as f:
-            f.write(os.fsdecode(env_dir))
+        write_redirect_file(project_root, env_dir)
 
     def create_configuration(self, context):
         """
@@ -633,6 +631,20 @@ def create(env_dir=DEFAULT_NAME, system_site_packages=False, clear=False,
     builder.create(env_dir, project_root=project_root)
 
 
+def read_redirect_file(project_root):
+    """Read the path in the ``.venv`` redirect file at *project_root*."""
+    redirect_file_path = os.path.join(project_root, DEFAULT_NAME)
+    with open(redirect_file_path, 'r', encoding='utf-8') as f:
+        return pathlib.Path(f.read().removesuffix('\n').removesuffix('\r'))
+
+
+def write_redirect_file(project_root, env_dir):
+        """Create a ``.venv`` file at *project_root* that points to *venv_dir*."""
+        redirect_file_path = os.path.join(project_root, DEFAULT_NAME)
+        with open(redirect_file_path, 'w', encoding='utf-8') as f:
+            f.write(os.fsdecode(env_dir))
+
+
 def executable(dir, *, traverse=False):
     """
     Find the Python executable in a virtual environment located in *dir* at ``DEFAULT_NAME``.
@@ -656,10 +668,7 @@ def executable(dir, *, traverse=False):
             raise FileNotFoundError(msg)
     else:
         if venv_path.is_file():
-            # Get the redirected location of the virtual environment.
-            with open(venv_path, 'r', encoding='utf-8') as f:
-                venv_dir = f.read().removesuffix('\n').removesuffix('\r')
-                venv_path = pathlib.Path(venv_dir)
+            venv_path = read_redirect_file(location)
 
         # Check that this is an actual virtual environment.
         if not (cfg_path := venv_path / _CFG_FILE_NAME).is_file():
