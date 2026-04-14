@@ -1081,7 +1081,8 @@ class RedirectFileTest(unittest.TestCase):
         for path in [cwd_str, cwd_str + "\n", cwd_str + "\r\n"]:
             with self.subTest(path=path):
                 with temp_dir() as tempdir:
-                    with open(os.path.join(tempdir, venv.DEFAULT_NAME), "w", encoding="utf-8") as f:
+                    with open(os.path.join(tempdir, venv.DEFAULT_NAME), "w",
+                              encoding="utf-8") as f:
                         f.write(path)
                     result = venv.read_redirect_file(tempdir)
 
@@ -1106,7 +1107,8 @@ class RedirectFileTest(unittest.TestCase):
                     venv_path = scratch / "my-venv"
                     create(env_dir=venv_path, project_root=project_path)
 
-                    self.assertEqual(venv.read_redirect_file(project_path), venv_path)
+                    self.assertEqual(venv.read_redirect_file(project_path),
+                                     venv_path)
 
     def test_create_cli(self):
         with temp_dir() as tempdir:
@@ -1114,13 +1116,16 @@ class RedirectFileTest(unittest.TestCase):
                 project_path = scratch / "my-project"
                 project_path.mkdir()
                 venv_path = scratch / "my-venv"
-                venv.main(['--without-pip', '--project-root', os.fsdecode(project_path), os.fsdecode(venv_path)])
+                venv.main(['--without-pip', '--project-root',
+                           os.fsdecode(project_path), os.fsdecode(venv_path)])
 
-                self.assertEqual(venv.read_redirect_file(project_path), venv_path)
+                self.assertEqual(venv.read_redirect_file(project_path),\
+                                 venv_path)
 
     def test_create_cli_too_many_paths(self):
         with self.assertRaises(ValueError):
-            venv.main(['--without-pip', '--project-root', 'path1', 'path2', 'path3'])
+            venv.main(['--without-pip', '--project-root', 'path1', 'path2',
+                       'path3'])
 
 
     # XXX executable
