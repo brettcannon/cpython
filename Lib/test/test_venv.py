@@ -24,7 +24,7 @@ from test.support import (captured_stdout, captured_stderr,
                           requires_venv_with_pip, TEST_HOME_DIR,
                           requires_resource, copy_python_src_ignore)
 from test.support.os_helper import (can_symlink, EnvironmentVarGuard, rmtree,
-                                    TESTFN, FakePath)
+                                    temp_dir, TESTFN, FakePath)
 import unittest
 import venv
 from unittest.mock import patch, Mock
@@ -1073,8 +1073,28 @@ class EnsurePipTest(BaseTest):
 
 
 class RedirectFileTest(unittest.TestCase):
-    pass
-    # XXX create_redirect_file
+    """Test redirect file handling."""
+
+    def test_reading(self):
+        cwd = pathlib.Path.cwd()
+        cwd_str = os.fsdecode(cwd)
+        for path in [cwd_str, cwd_str + "\n", cwd_str + "\r\n"]:
+            with self.subTest(path=path):
+                with temp_dir() as tempdir:
+                    with open(os.path.join(tempdir, venv.DEFAULT_NAME), "w", encoding="utf-8") as f:
+                        f.write(path)
+                    result = venv.read_redirect_file(tempdir)
+
+                    self.assertEqual(result, cwd)
+
+    def test_writing(self):
+        cwd = pathlib.Path.cwd()
+        with temp_dir() as tempdir:
+            venv.write_redirect_file(tempdir, cwd)
+            result = venv.read_redirect_file(tempdir)
+
+            self.assertEqual(result, cwd)
+
     # XXX project_root arg; func and meth
     # XXX --project-root option
 
