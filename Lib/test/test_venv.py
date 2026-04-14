@@ -1095,9 +1095,35 @@ class RedirectFileTest(unittest.TestCase):
 
             self.assertEqual(result, cwd)
 
-    # XXX project_root arg; func and meth
-    # XXX --project-root option
+    def test_create_code(self):
+        callables = [venv.create, venv.EnvBuilder().create]
+        for create in callables:
+            with self.subTest(create=create):
+                with temp_dir() as tempdir:
+                    scratch = pathlib.Path(tempdir)
+                    project_path = scratch / "my-project"
+                    project_path.mkdir()
+                    venv_path = scratch / "my-venv"
+                    create(env_dir=venv_path, project_root=project_path)
 
+                    self.assertEqual(venv.read_redirect_file(project_path), venv_path)
+
+    def test_create_cli(self):
+        with temp_dir() as tempdir:
+                scratch = pathlib.Path(tempdir)
+                project_path = scratch / "my-project"
+                project_path.mkdir()
+                venv_path = scratch / "my-venv"
+                venv.main(['--without-pip', '--project-root', os.fsdecode(project_path), os.fsdecode(venv_path)])
+
+                self.assertEqual(venv.read_redirect_file(project_path), venv_path)
+
+    def test_create_cli_too_many_paths(self):
+        with self.assertRaises(ValueError):
+            venv.main(['--without-pip', '--project-root', 'path1', 'path2', 'path3'])
+
+
+    # XXX executable
 
 if __name__ == "__main__":
     unittest.main()
