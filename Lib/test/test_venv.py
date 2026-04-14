@@ -1085,7 +1085,6 @@ class RedirectFileTest(unittest.TestCase):
                               encoding="utf-8") as f:
                         f.write(path)
                     result = venv.read_redirect_file(tempdir)
-
                     self.assertEqual(result, cwd)
 
     def test_writing(self):
@@ -1093,7 +1092,6 @@ class RedirectFileTest(unittest.TestCase):
         with temp_dir() as tempdir:
             venv.write_redirect_file(tempdir, cwd)
             result = venv.read_redirect_file(tempdir)
-
             self.assertEqual(result, cwd)
 
     def test_create_code(self):
@@ -1106,7 +1104,6 @@ class RedirectFileTest(unittest.TestCase):
                     project_path.mkdir()
                     venv_path = scratch / "my-venv"
                     create(env_dir=venv_path, project_root=project_path)
-
                     self.assertEqual(venv.read_redirect_file(project_path),
                                      venv_path)
 
@@ -1118,7 +1115,6 @@ class RedirectFileTest(unittest.TestCase):
                 venv_path = scratch / "my-venv"
                 venv.main(['--without-pip', '--project-root',
                            os.fsdecode(project_path), os.fsdecode(venv_path)])
-
                 self.assertEqual(venv.read_redirect_file(project_path),\
                                  venv_path)
 
@@ -1128,7 +1124,42 @@ class RedirectFileTest(unittest.TestCase):
                        'path3'])
 
 
-    # XXX executable
+class ExecutableTest(unittest.TestCase):
+    """Test executable()."""
+
+    def exe_path(self, env_dir):
+        for path in [env_dir / 'bin' / 'python', env_dir / 'Scripts' / 'python.exe']:
+            if path.is_file():
+                return path
+        else:
+            raise FileNotFoundError("No 'python' executable found in {env_dir!r}")
+
+    def test_nothing(self):
+        with self.assertRaises(FileNotFoundError):
+            venv.executable("nonexistent")
+
+    def test_environment(self):
+        with temp_dir() as tempdir:
+            env_dir = pathlib.Path(tempdir) / venv.DEFAULT_NAME
+            venv.create(env_dir)
+            exe = venv.executable(tempdir)
+            self.assertEqual(exe, self.exe_path(env_dir))
+
+    def test_redirect_file(self):
+        with temp_dir() as tempdir:
+            scratch = pathlib.Path(tempdir)
+            project_path = scratch / "my-project"
+            project_path.mkdir()
+            venv_path = scratch / "my-venv"
+            venv.create(env_dir=venv_path, project_root=project_path)
+            exe = venv.executable(project_path)
+            self.assertEqual(exe, self.exe_path(venv_path))
+
+    # XXX traverse
+    # XXX `.venv` directory but no `pyvenv.cfg`
+    # XXX No `python`/`python.exe`
 
 if __name__ == "__main__":
+
+
     unittest.main()
