@@ -1087,6 +1087,12 @@ class RedirectFileTest(unittest.TestCase):
                     result = venv.read_redirect_file(tempdir)
                     self.assertEqual(result, cwd)
 
+    def test_reading_invalid_location(self):
+        with temp_dir() as tempdir:
+            venv.write_redirect_file(tempdir, "does-not-exist")
+            with self.assertRaises(FileNotFoundError):
+                venv.read_redirect_file(tempdir)
+
     def test_writing(self):
         cwd = pathlib.Path.cwd()
         with temp_dir() as tempdir:
@@ -1152,6 +1158,7 @@ class ExecutableTest(unittest.TestCase):
             project_path.mkdir()
             venv_path = scratch / "my-venv"
             venv.create(env_dir=venv_path, project_root=project_path)
+            self.assertTrue((project_path / venv.DEFAULT_NAME).is_file())
             exe = venv.executable(project_path)
             self.assertEqual(exe, self.exe_path(venv_path))
 

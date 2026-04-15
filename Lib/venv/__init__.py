@@ -635,7 +635,12 @@ def read_redirect_file(project_root):
     """Read the path in the ``.venv`` redirect file at *project_root*."""
     redirect_file_path = os.path.join(project_root, DEFAULT_NAME)
     with open(redirect_file_path, 'r', encoding='utf-8') as f:
-        return pathlib.Path(f.read().removesuffix('\n').removesuffix('\r'))
+        path = pathlib.Path(f.read().removesuffix('\n').removesuffix('\r'))
+    if not path.exists():
+        raise FileNotFoundError(f"Redirect file {redirect_file_path!r} points "
+                                f"to non-existent {path!r}.")
+    else:
+        return path
 
 
 def write_redirect_file(project_root, env_dir):
