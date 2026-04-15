@@ -1134,7 +1134,7 @@ class ExecutableTest(unittest.TestCase):
         else:
             raise FileNotFoundError("No 'python' executable found in {env_dir!r}")
 
-    def test_nothing(self):
+    def test_no_environment(self):
         with self.assertRaises(FileNotFoundError):
             venv.executable("nonexistent")
 
@@ -1155,11 +1155,60 @@ class ExecutableTest(unittest.TestCase):
             exe = venv.executable(project_path)
             self.assertEqual(exe, self.exe_path(venv_path))
 
-    # XXX traverse
-    # XXX `.venv` directory but no `pyvenv.cfg`
-    # XXX No `python`/`python.exe`
+    def test_traverse_dir_first(self):
+        with temp_dir() as tempdir:
+            added_depth = pathlib.Path(tempdir, "added_depth")
+            # Use a path that is clearly wrong for the redirect file.
+            venv.write_redirect_file(tempdir, pathlib.Path.cwd())
+            added_depth.mkdir()
+            env_dir = added_depth / venv.DEFAULT_NAME
+            venv.create(env_dir)
+            deepest = added_depth
+            for depth in range(3):
+                new_dir = deepest / f"dir{depth}"
+                new_dir.mkdir()
+                deepest = new_dir
+
+            result = venv.executable(deepest, traverse=True)
+            self.assertEqual(result, self.exe_path(env_dir))
+
+    def test_traverse_redirect_first(self):
+        with temp_dir() as tempdir:
+            # Make sure the virtual environment is not directly in a parent
+            # directory.
+            side_dir = pathlib.Path(tempdir, "side_dir")
+            side_dir.mkdir()
+            env_dir = pathlib.Path(side_dir, venv.DEFAULT_NAME)
+            venv.create(env_dir)
+            added_depth = pathlib.Path(tempdir, "added_depth")
+            added_depth.mkdir()
+            venv.write_redirect_file(added_depth, env_dir)
+            deepest = added_depth
+            for depth in range(3):
+                new_dir = deepest / f"dir{depth}"
+                new_dir.mkdir()
+                deepest = new_dir
+
+            result = venv.executable(deepest, traverse=True)
+            self.assertEqual(result, self.exe_path(env_dir))
+
+    def test_missing_cfg(self):
+        with temp_dir() as tempdir:
+            env_dir = pathlib.Path(tempdir, venv.DEFAULT_NAME)
+            venv.create(env_dir)
+            (env_dir / "pyvenv.cfg").unlink()
+            with self.assertRaises(FileNotFoundError):
+                venv.executable(env_dir)
+
+    def test_no_python(self):
+        with temp_dir() as tempdir:
+            env_dir = pathlib.Path(tempdir, venv.DEFAULT_NAME)
+            venv.create(env_dir)
+            exe = self.exe_path(env_dir)
+            exe.unlink()
+            with self.assertRaises(FileNotFoundError):
+                venv.executable(env_dir)
+
 
 if __name__ == "__main__":
-
-
     unittest.main()
