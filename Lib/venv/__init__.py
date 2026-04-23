@@ -635,7 +635,8 @@ def read_redirect_file(project_root):
     """Read the path in the ``.venv`` redirect file at *project_root*."""
     redirect_file_path = os.path.join(project_root, DEFAULT_NAME)
     with open(redirect_file_path, 'r', encoding='utf-8') as f:
-        path = pathlib.Path(f.read().removesuffix('\n').removesuffix('\r'))
+        first_line = next(iter(f))
+    path = pathlib.Path(first_line.removesuffix('\n').removesuffix('\r'))
     if not path.exists():
         raise FileNotFoundError(f"Redirect file {redirect_file_path!r} points "
                                 f"to non-existent {path!r}.")
@@ -650,7 +651,7 @@ def write_redirect_file(project_root, env_dir):
             f.write(os.fsdecode(env_dir))
 
 
-def executable(dir, *, traverse=False):
+def executable(dir, name=DEFAULT_NAME, *, traverse=False):
     """
     Find the Python executable in a virtual environment located in *dir* at ``DEFAULT_NAME``.
 
@@ -659,15 +660,17 @@ def executable(dir, *, traverse=False):
 
     :param dir: The directory (to start) to look for a virtual environment in
                 ``DEFAULT_NAME``.
+    :param name: The name of the vritual environment directory or redirect file
+                 to look for.
     :param traverse: Flag to control whether to traverse through parent
                      directories as part of the search.
     """
     location = pathlib.Path(dir)
-    if not (venv_path := location / DEFAULT_NAME).exists():
+    if not (venv_path := location / name).exists():
         if traverse and location.parent != location:
             return executable(location.parent, traverse=True)
         else:
-            msg = f"No virtual environment found at {DEFAULT_NAME!r} in {dir!r}"
+            msg = f"No virtual environment found at {name!r} in {dir!r}"
             if traverse:
                 msg += " or any parent directories"
             raise FileNotFoundError(msg)

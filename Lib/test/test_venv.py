@@ -1078,7 +1078,7 @@ class RedirectFileTest(unittest.TestCase):
     def test_reading(self):
         cwd = pathlib.Path.cwd()
         cwd_str = os.fsdecode(cwd)
-        for path in [cwd_str, cwd_str + "\n", cwd_str + "\r\n"]:
+        for path in [cwd_str, cwd_str + "\n", cwd_str + "\r\n", cwd_str + "\nYOLO"]:
             with self.subTest(path=path):
                 with temp_dir() as tempdir:
                     with open(os.path.join(tempdir, venv.DEFAULT_NAME), "w",
@@ -1099,6 +1099,8 @@ class RedirectFileTest(unittest.TestCase):
             venv.write_redirect_file(tempdir, cwd)
             result = venv.read_redirect_file(tempdir)
             self.assertEqual(result, cwd)
+
+
 
     def test_create_code(self):
         callables = [venv.create, venv.EnvBuilder().create]
@@ -1149,6 +1151,14 @@ class ExecutableTest(unittest.TestCase):
             env_dir = pathlib.Path(tempdir) / venv.DEFAULT_NAME
             venv.create(env_dir)
             exe = venv.executable(tempdir)
+            self.assertEqual(exe, self.exe_path(env_dir))
+
+    def test_environment_not_default_name(self):
+        venv_name = "my-venv"
+        with temp_dir() as tempdir:
+            env_dir = pathlib.Path(tempdir) / venv_name
+            venv.create(env_dir)
+            exe = venv.executable(tempdir, venv_name)
             self.assertEqual(exe, self.exe_path(env_dir))
 
     def test_redirect_file(self):
