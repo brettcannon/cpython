@@ -1075,7 +1075,7 @@ class EnsurePipTest(BaseTest):
 class RedirectFileTest(unittest.TestCase):
     """Test redirect file handling."""
 
-    def test_reading(self):
+    def test_reading_absolute_path(self):
         cwd = pathlib.Path.cwd()
         cwd_str = os.fsdecode(cwd)
         for path in [cwd_str, cwd_str + "\n", cwd_str + "\r\n", cwd_str + "\nYOLO"]:
@@ -1086,6 +1086,23 @@ class RedirectFileTest(unittest.TestCase):
                         f.write(path)
                     result = venv.read_redirect_file(tempdir)
                     self.assertEqual(result, cwd)
+
+    def test_reading_relative_path(self):
+        cwd = pathlib.Path.cwd()
+        cwd_str = os.fsdecode(cwd)
+        with temp_dir() as tempdir:
+            temp_path = pathlib.Path(tempdir)
+            venv_path = temp_path / "my-venv"
+            venv_path.mkdir()
+            proj_path = temp_path / "my-project"
+            proj_path.mkdir()
+            rel_venv_path = venv_path.relative_to(proj_path, walk_up=True)
+            self.assertFalse(rel_venv_path.is_absolute())
+            with open(proj_path / venv.DEFAULT_NAME, "w",
+                      encoding="utf-8") as f:
+                f.write(os.fsdecode(rel_venv_path))
+            result = venv.read_redirect_file(proj_path)
+            self.assertEqual(result, venv_path)
 
     def test_reading_invalid_location(self):
         with temp_dir() as tempdir:

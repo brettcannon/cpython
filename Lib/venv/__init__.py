@@ -633,10 +633,11 @@ def create(env_dir=DEFAULT_NAME, system_site_packages=False, clear=False,
 
 def read_redirect_file(project_root):
     """Read the path in the ``.venv`` redirect file at *project_root*."""
-    redirect_file_path = os.path.join(project_root, DEFAULT_NAME)
+    redirect_file_path = pathlib.Path(project_root, DEFAULT_NAME)
     with open(redirect_file_path, 'r', encoding='utf-8') as f:
         first_line = next(iter(f))
-    path = pathlib.Path(first_line.removesuffix('\n').removesuffix('\r'))
+    clean_first_line = first_line.removesuffix('\n').removesuffix('\r')
+    path = pathlib.Path(project_root, clean_first_line).resolve()
     if not path.exists():
         raise FileNotFoundError(f"Redirect file {redirect_file_path!r} points "
                                 f"to non-existent {path!r}.")
